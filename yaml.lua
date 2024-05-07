@@ -471,7 +471,7 @@ Parser.parseHash = function (self, hash)
 
   if self:isInline() then
     local id = self:advanceValue()
-    self:expect(":", "expected semi-colon after id")
+    self:expect(":", "expected colon after id")
     self:ignoreSpace()
     if self:accept("indent") then
       indents = indents + 1
@@ -487,7 +487,7 @@ Parser.parseHash = function (self, hash)
 
   while self:peekType("id") do
     local id = self:advanceValue()
-    self:expect(":","expected semi-colon after id")
+    self:expect(":","expected colon after id")
     self:ignoreSpace()
     hash[id] = self:parse()
     self:ignoreSpace();
