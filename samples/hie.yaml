@@ -1,0 +1,68 @@
+cradle:
+  multi:
+    - path: "./bazel-bin"
+      config:
+        cradle:
+          none:
+    - path: "./bazel-out"
+      config:
+        cradle:
+          none:
+    - path: "./bazel-testlogs"
+      config:
+        cradle:
+          none:
+    - path: "./bazel-yesod-bridge"
+      config:
+        cradle:
+          none:
+    - path: "./bazel-hls-bin"
+      config:
+        cradle:
+          none:
+    - path: "./bazel-hls-out"
+      config:
+        cradle:
+          none:
+    - path: "./bazel-hls-testlogs"
+      config:
+        cradle:
+          none:
+    - path: "./bazel-hls-yesod-bridge"
+      config:
+        cradle:
+          none:
+    - path: "./bridge-site"
+      config:
+        cradle:
+          bios:
+            program: "./bridge-site/.hie-bios"
+    - path: "./cassandra-util"
+      config:
+        cradle:
+          bios:
+            program: "./cassandra-util/.hie-bios"
+    - path: "./conduit-util"
+      config:
+        cradle:
+          bios:
+            program: "./conduit-util/.hie-bios"
+    - path: "./hsx-util"
+      config:
+        cradle:
+          bios:
+            program: "./hsx-util/.hie-bios"
+    - path: "./page"
+      config:
+        cradle:
+          bios:
+            program: "./page/.hie-bios"
+    - path: "./wai-practice"
+      config:
+        cradle:
+          bios:
+            program: "./wai-practice/.hie-bios"
+    - path: "./"
+      config:
+        cradle:
+          none:

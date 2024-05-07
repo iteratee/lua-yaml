@@ -3,6 +3,16 @@
   thisis: null
   thistoo: NULL
   notnull: yes
+  empties:
+  - emptySolo:
+  - nonEmptyInitial: 7
+    emptyCentral:
+    nonEmptyFinal: 8
+  - emptyInitial:
+    nonEmptyFinal: 9
+  - nonEmptyInitial: 10
+    emptyFinal:
+  - emptyTerminal:
   tildeis: ~
   capitalized: Null
   end: test passed?

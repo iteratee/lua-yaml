@@ -336,6 +336,10 @@ Parser.parse = function (self)
   elseif c.token.const == true then
     self:advanceValue();
     result = c.token.value
+  -- handle the case where a label is followed by a dedent and should parse as
+  -- null
+  elseif c.token[1] == "dedent" then
+    result = nil
   else
     error("ParseError: unexpected token '" .. c.token[1] .. "'" .. context(c.token.input))
   end
@@ -465,32 +469,109 @@ Parser.parseTextBlock = function (self, sep)
   return result
 end
 
-Parser.parseHash = function (self, hash)
+-- @param hash table|nil Table to populate with labels
+-- @param listHash boolean True if this is a hash that occurs at the
+-- start of a list
+-- @return the fully parsed hash
+Parser.parseHash = function (self, hash, listHash)
   hash = hash or {}
   local indents = 0
+  local acceptedImpliedIndent = false
 
   if self:isInline() then
     local id = self:advanceValue()
     self:expect(":", "expected colon after id")
     self:ignoreSpace()
-    if self:accept("indent") then
+    if not listHash and self:accept("indent") then
       indents = indents + 1
       hash[id] = self:parse()
-    else
+    elseif not listHash then
       hash[id] = self:parse()
       if self:accept("indent") then
         indents = indents + 1
       end
+    else -- listHash == true
+      -- If there is another identifier *without* an indent, we have a case something like this:
+      --[[
+        listof:
+        - nonNullValue: 7
+        - nullValue:
+        scalarValue:
+      --]]
+      if self:peekType("id") then
+        hash[id] = nil
+        return
+      -- If the next token is another list item at the same indent level, then
+      -- parse this value as null.
+      --[[
+         listof:
+         - nullValue:
+         - nonNullValue: 7
+      --]]
+      elseif listHash and self:peekType("-") then
+        hash[id] = nil
+        return hash
+      -- if the next token is a single indent level and then an identifier
+      -- parse this key as null.
+      --[[
+        listof:
+        - nullValue:
+          nonNullValue: 7
+      --]]
+      elseif listHash and self:peekType("indent") and self:peekType("id", 2) then
+        self:advance()
+        acceptedImpliedIndent = true
+        indents = indents + 1
+        hash[id] = nil
+      -- if the next token is a single indent level and then something other
+      -- than an identifier, consume the indent, and then parse recursively.
+      -- Handles these cases among others
+      --[[
+        listof:
+        - nonNullValue:
+            subKey: 7
+      --]]
+      --[[
+        listof:
+        - keyedSubList:
+          - listItem: 1
+      --]]
+      elseif listHash and self:peekType("indent") then
+        self:advance()
+        acceptedImpliedIndent = true
+        indents = indents + 1
+        hash[id] = self:parse()
+        self:ignoreSpace();
+      -- if the next token is not an indent, and is not one of the above cases
+      -- we likely have something on the same line like this:
+      --[[
+        value: 7
+      --]]
+      else
+        hash[id] = self:parse()
+        self:ignoreSpace();
+      end
     end
-    self:ignoreSpace();
+  end
+
+  -- Consume the implied indent if it wasn't already consumed above.
+  if listHash and not acceptedImpliedIndent and self:peekType("indent") then
+    self:advance()
+    indents = indents + 1
   end
 
   while self:peekType("id") do
     local id = self:advanceValue()
     self:expect(":","expected colon after id")
     self:ignoreSpace()
-    hash[id] = self:parse()
-    self:ignoreSpace();
+    -- If the next token is another id at the same indent level, this key should
+    -- parse as null.
+    if self:peekType("id") then
+      hash[id] = nil
+    else
+      hash[id] = self:parse()
+      self:ignoreSpace();
+    end
   end
 
   while indents > 0 do
@@ -533,7 +614,13 @@ Parser.parseList = function (self)
   local list = {}
   while self:accept("-") do
     self:ignoreSpace()
-    list[#list + 1] = self:parse()
+    -- Check for the case of a hash starting as a list item, and pass that on
+    -- to the parseHash function directly.
+    if self:peekType("id") then
+      list[#list + 1] = self:parseHash({}, true)
+    else
+      list[#list + 1] = self:parse()
+    end
 
     self:ignoreSpace()
   end
